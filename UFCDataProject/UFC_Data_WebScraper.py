@@ -2,6 +2,7 @@ import requests
 import html5lib
 import csv
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 #This is a change
 
@@ -16,6 +17,7 @@ That list will then be read to loop through the fights and individual bouts
 # http://www.fightmetric.com/statistics/events/completed?page=all
 # Date Range = no limit
 
+startScript = datetime.now()
 
 def csvWritter(data, csvName, header):
     # Block used to data to csvName
@@ -42,19 +44,12 @@ def scrapeFightEvents(url): #Scrapes for all events on page
 
     # Produces a generator of fight dates
     fightDates = (i.get_text().strip() for i in fightDates)
-
     # Prouces a generator of fight location
     fightLoc = (i.get_text().strip() for i in fightLoc)
-
     # Prouces a list of dictionaries {a unique Identifyier: "Name of Fight", link to fight, date of fight, Location of the fight}
-    fightList_fightName = [{fightLinks.index(i): [i.get_text().strip(), i['href'] ,next(fightDates), next(fightLoc)]} for i in fightLinks]
-    
-    # flattens fightList_fightName to a dictionary{unique_id : [name, link, date, Location]}
-    # Is this going to stay sorted?????
-    id_Name_Link_Date_Loc = {key: value for dictionary in fightList_fightName for key, value in dictionary.items()}
+    fightList_fightName =  ([i.get_text().strip(), i['href'] ,next(fightDates), next(fightLoc)] for i in fightLinks)
 
-    # Return dictionary of dictionary{unique_id : [name, link, date, Location]}
-    return id_Name_Link_Date_Loc
+    return fightList_fightName
 
 
 
@@ -95,9 +90,9 @@ def scrapeEventDetials(events):
 
 allEventsURL = 'http://www.fightmetric.com/statistics/events/completed?page=all'
 
-csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
-                 'fightMetric_Events_info': r'C:\Users\Austi\Documents\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events_info.csv',
-                 'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
+csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
+                 'fightMetric_Events_info': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events_info.csv',
+                 'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
 
 
 headerDictionary = {'fightMetric_Events' : ['Fight Title', 'Fight Link', 'Fight Date', 'Fight Location'], 
@@ -110,13 +105,13 @@ headerDictionary = {'fightMetric_Events' : ['Fight Title', 'Fight Link', 'Fight 
 id_Name_Link_Date_Loc = scrapeFightEvents(allEventsURL)
 
 # Writes to a file in csvDictionary with header in headerDictionary
-csvWritter(id_Name_Link_Date_Loc.values(), csvDictionary['fightMetric_Events'], headerDictionary['fightMetric_Events'])
+csvWritter(id_Name_Link_Date_Loc, csvDictionary['fightMetric_Events'], headerDictionary['fightMetric_Events'])
 
 # Returns Basic Fight info [fight name, fight attendance], [name, link, fighter one, fighter two]
-fightDetails = scrapeEventDetials(id_Name_Link_Date_Loc)
+# fightDetails = scrapeEventDetials(id_Name_Link_Date_Loc)
 
 # Writes fight details to two separate csv's
-csvWritter(fightDetails[0], csvDictionary['fightMetric_Events_info'], headerDictionary['fightMetric_Events_info'])
-csvWritter(fightDetails[1], csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
+# csvWritter(fightDetails[0], csvDictionary['fightMetric_Events_info'], headerDictionary['fightMetric_Events_info'])
+# csvWritter(fightDetails[1], csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
 
-print ("Script is Done")
+print ("scrpit took: ", datetime.now() - startScript )
