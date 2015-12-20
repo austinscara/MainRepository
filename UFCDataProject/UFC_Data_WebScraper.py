@@ -25,6 +25,8 @@ That list will then be read to loop through the fights and individual bouts
 startScript = datetime.now()
 
 
+
+
 def csvWritter(data, csvName, header):
     # Block used to data to csvName
     # With header
@@ -78,9 +80,22 @@ def scrapeEventDetials(events):
 
 
 allEventsURL = 'http://www.fightmetric.com/statistics/events/completed?page=all'
-csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
-                 'fightMetric_Events_info': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events_info.csv',
-                 'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
+
+
+
+#Windows
+# csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
+#                  'fightMetric_Events_info': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events_info.csv',
+#                  'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
+
+
+# MAC
+csvDictionary = {'fightMetric_Events': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Events.csv',
+                 'fightMetric_Events_info': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Events_info.csv',
+                 'fightMetric_Events_Name_link_fighter': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Name_link_fighters.csv'}
+
+
+
 headerDictionary = {'fightMetric_Events' : ['Fight Title', 'Fight Link', 'Fight Date', 'Fight Location'], 
                     'fightMetric_Events_info': ['Fight Title', 'Attendance'],
                     'fightMetric_Events_Name_link_fighter': ['Fight Name', 'Fight Link', 'Fighter One', 'Fighter Two']}
@@ -109,3 +124,7 @@ print (scrapeFightEvents(allEventsURL))
 
 print ("scrpit took: ", datetime.now() - startScript )
 print (os.cpu_count())
+
+
+
+
