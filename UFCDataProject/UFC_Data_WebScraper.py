@@ -10,7 +10,6 @@ from memory_profiler import profile
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-
 """
 This Modules is scraping for links that contain fightevent information
 it will grab links and read it in to a list
