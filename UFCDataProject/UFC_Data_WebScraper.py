@@ -52,83 +52,60 @@ def scrapeFightEvents(url): #Scrapes for all events on page
     # Prouces a generator of fight location
     fightLoc = (i.get_text().strip() for i in fightLoc)
     # Returns generator object yeilding a list: [fight Name, fight link, gen(fight Date), gen(fight location)]
-    # for i in fightLinks:
-    #   yield [i.get_text().strip(), i['href'] ,next(fightDates), next(fightLoc)] 
     return ([i.get_text().strip(), i['href'] ,next(fightDates), next(fightLoc)] for i in fightLinks)
 
 
 # @profile
 def scrapeEventDetials(events):
     # For every fight event
-    # print ("getting " + events + " data")    
 
-    website = requests.get(events[1]).content
-    time.sleep(2)
+    website = requests.get(events[1]).content   
+    time.sleep(3)
     soup = BeautifulSoup(website, 'html5lib').body
+    
     fight_Name = soup.find('span', {'class': 'b-content__title-highlight'}).get_text().strip()
-    fight_Attendance = soup.find('ul', {'class':'b-list__box-list'}).find_all('li')[-1].get_text().strip().split()[-1]   
-    # returns [fight name, fight Attendance], [fight_Name, fight_Link, fighter_One, fighter_Two]
-    gen = [[fight_Name,
+    fight_Attendance = soup.find('ul', {'class':'b-list__box-list'}).find_all('li')[-1].get_text().strip().split()[-1]
+    if fight_Attendance == 'Attendance:':
+        fight_Attendance = 'NULL'
+
+    eventDetails = [[fight_Name,
             row['data-link'],
             fight_Attendance,
             row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[0].get_text().strip(),
             row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[1].get_text().strip()]  
             for row in soup.find('tbody').find_all('tr')]
-    return gen
+    return eventDetails
 
-
+#Main Link To Scrape
 allEventsURL = 'http://www.fightmetric.com/statistics/events/completed?page=all'
 
-
-
 #Windows
-# csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
-#                  'fightMetric_Events_info': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events_info.csv',
-#                  'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
-
+csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
+                 'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
 
 # MAC
-csvDictionary = {'fightMetric_Events': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Events.csv',
-                 'fightMetric_Events_info': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Events_info.csv',
-                 'fightMetric_Events_Name_link_fighter': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Name_link_fighters.csv'}
-
-
+# csvDictionary = {'fightMetric_Events': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Events.csv',
+#                  'fightMetric_Events_Name_link_fighter': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Name_link_fighters.csv'}
 
 headerDictionary = {'fightMetric_Events' : ['Fight Title', 'Fight Link', 'Fight Date', 'Fight Location'], 
-                    'fightMetric_Events_info': ['Fight Title', 'Attendance'],
-                    'fightMetric_Events_Name_link_fighter': ['Fight Name', 'Fight Link', 'Fighter One', 'Fighter Two']}
-
-
-
+                    'fightMetric_Events_Name_link_fighter': ['Fight Name', 'Fight Link', 'Attendance','Fighter One', 'Fighter Two']}
 
 # Writes to a file in csvDictionary with header in headerDictionary
 csvWritter(scrapeFightEvents(allEventsURL), csvDictionary['fightMetric_Events'], headerDictionary['fightMetric_Events'])
 
 ############################
-# for i in scrapeFightEvents(allEventsURL):
-#     print (scrapeEventDetials(i[1]))
+# Threading implementation: 
+# 4 threads = 4:36
+# 8 threads = 3:30
+############################
 
-
-# Returns Basic Fight info [fight name, fight Attendance], [name, link, fighter one, fighter two]
-pool = Pool(4)
+# Sets up thread Pool
+pool = Pool(8)
+# Maps items across threads 
 results = pool.imap(scrapeEventDetials, scrapeFightEvents(allEventsURL))
-for i in results:
-    print (i)
-
-
-
-
-
-# fightDetails = scrapeEventDetials(scrapeFightEvents(allEventsURL))
-
-
-# # Writes fight details to two separate csv's
-# csvWritter(fightDetails[0], csvDictionary['fightMetric_Events_info'], headerDictionary['fightMetric_Events_info'])
-# csvWritter(fightDetails[1], csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
+# Creates a list of lists formatted for csvWritter
+toWrite = [j for i in results for j in i]
+# Writes Event details to CSV
+csvWritter(toWrite, csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
 
 print ("scrpit took: ", datetime.now() - startScript )
-print (os.cpu_count())
-
-
-
-
