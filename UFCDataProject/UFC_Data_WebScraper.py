@@ -3,6 +3,7 @@ import html5lib
 import csv
 import os
 import itertools
+import time
 import threading
 from queue import Queue
 from memory_profiler import profile
@@ -23,6 +24,7 @@ That list will then be read to loop through the fights and individual bouts
 # Date Range = no limit
 
 startScript = datetime.now()
+exitFlag = 0
 
 class myThread (threading.Thread):
     def __init__(self, threadID, name, q):
@@ -32,7 +34,7 @@ class myThread (threading.Thread):
         self.q = q
     def run(self):
         print ("Starting " + self.name)
-        scrapeEventDetials(self.name)
+        scrapeEventDetials(self.name, self.q)
         print ("Exiting " + self.name)
 
 
@@ -68,23 +70,50 @@ def scrapeFightEvents(url): #Scrapes for all events on page
 
 
 # @profile
-def scrapeEventDetials(events):
+def scrapeEventDetials(events, q):
     # For every fight event
-    print (events)
-    print ("getting site data")
-    website = requests.get(events).content
-    soup = BeautifulSoup(website, 'html5lib').body
-    fight_Name = soup.find('span', {'class': 'b-content__title-highlight'}).get_text().strip()
-    fight_Attendance = soup.find('ul', {'class':'b-list__box-list'}).find_all('li')[-1].get_text().strip().split()[-1]   
-    # returns [fight name, fight Attendance], [fight_Name, fight_Link, fighter_One, fighter_Two]
-    gen = [[fight_Name,
-            row['data-link'],
-            fight_Attendance,
-            row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[0].get_text().strip(),
-            row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[1].get_text().strip()]  
-            for row in soup.find('tbody').find_all('tr')]
+    # print ("getting " + events + " data")
+    
+    while not exitFlag:
+        if not workQueue.empty():
+            data = q.get()
 
-    return gen
+            website = requests.get(events).content
+            soup = BeautifulSoup(website, 'html5lib').body
+            time.sleep(3)
+            fight_Name = soup.find('span', {'class': 'b-content__title-highlight'})#.get_text().strip()
+
+            print (fight_Name)
+            # fight_Attendance = soup.find('ul', {'class':'b-list__box-list'}).find_all('li')[-1].get_text().strip().split()[-1]   
+            # # returns [fight name, fight Attendance], [fight_Name, fight_Link, fighter_One, fighter_Two]
+            # gen = [[fight_Name,
+            #         row['data-link'],
+            #         fight_Attendance,
+            #         row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[0].get_text().strip(),
+            #         row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[1].get_text().strip()]  
+            #         for row in soup.find('tbody').find_all('tr')]
+
+            queueLock.release()
+            print ("%s processing %s" % (threadName, data))
+        else:
+            queueLock.release()
+        time.sleep(1)
+
+    # website = requests.get(events).content
+    # soup = BeautifulSoup(website, 'html5lib').body
+    # time.sleep(3)
+    # fight_Name = soup.find('span', {'class': 'b-content__title-highlight'})#.get_text().strip()
+
+    # print (fight_Name)
+    # # fight_Attendance = soup.find('ul', {'class':'b-list__box-list'}).find_all('li')[-1].get_text().strip().split()[-1]   
+    # # # returns [fight name, fight Attendance], [fight_Name, fight_Link, fighter_One, fighter_Two]
+    # # gen = [[fight_Name,
+    # #         row['data-link'],
+    # #         fight_Attendance,
+    # #         row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[0].get_text().strip(),
+    # #         row.find('td', {'class': 'b-fight-details__table-col l-page_align_left'}).find_all('p')[1].get_text().strip()]  
+    # #         for row in soup.find('tbody').find_all('tr')]
+
 
 
 allEventsURL = 'http://www.fightmetric.com/statistics/events/completed?page=all'
@@ -115,6 +144,9 @@ headerDictionary = {'fightMetric_Events' : ['Fight Title', 'Fight Link', 'Fight 
 csvWritter(scrapeFightEvents(allEventsURL), csvDictionary['fightMetric_Events'], headerDictionary['fightMetric_Events'])
 
 ############################
+# for i in scrapeFightEvents(allEventsURL):
+#     print (scrapeEventDetials(i[1]))
+
 
 # Returns Basic Fight info [fight name, fight Attendance], [name, link, fighter one, fighter two]
 threadList = scrapeFightEvents(allEventsURL)
