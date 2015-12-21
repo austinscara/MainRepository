@@ -10,7 +10,6 @@ from memory_profiler import profile
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-#This is a change
 
 """
 This Modules is scraping for links that contain fightevent information
@@ -18,13 +17,11 @@ it will grab links and read it in to a list
 
 That list will then be read to loop through the fights and individual bouts
 """
-
 # The link to all the fight information
 # http://www.fightmetric.com/statistics/events/completed?page=all
 # Date Range = no limit
 
 startScript = datetime.now()
-
 
 def csvWritter(data, csvName, header):
     # Block used to data to csvName
@@ -35,8 +32,6 @@ def csvWritter(data, csvName, header):
         for eventData in data:
             writer.writerow(eventData)
     return None
-
-
 
 def scrapeFightEvents(url): #Scrapes for all events on page 
     website = requests.get(url).content
@@ -54,11 +49,9 @@ def scrapeFightEvents(url): #Scrapes for all events on page
     # Returns generator object yeilding a list: [fight Name, fight link, gen(fight Date), gen(fight location)]
     return ([i.get_text().strip(), i['href'] ,next(fightDates), next(fightLoc)] for i in fightLinks)
 
-
 # @profile
 def scrapeEventDetials(events):
     # For every fight event
-
     website = requests.get(events[1]).content   
     time.sleep(3)
     soup = BeautifulSoup(website, 'html5lib').body
@@ -78,11 +71,9 @@ def scrapeEventDetials(events):
 
 #Main Link To Scrape
 allEventsURL = 'http://www.fightmetric.com/statistics/events/completed?page=all'
-
 #Windows
 csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Events.csv',
                  'fightMetric_Events_Name_link_fighter': r'C:\Users\Austi\Documents\GitHub\MainRepository\UFCDataProject\UFC_Data_CSV_Files\FightMetric_Name_link_fighters.csv'}
-
 # MAC
 # csvDictionary = {'fightMetric_Events': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Events.csv',
 #                  'fightMetric_Events_Name_link_fighter': r'/Users/austinscara/Documents/GitHub/MainRepository/UFCDataProject/UFC_Data_CSV_Files/FightMetric_Name_link_fighters.csv'}
@@ -98,14 +89,12 @@ csvWritter(scrapeFightEvents(allEventsURL), csvDictionary['fightMetric_Events'],
 # 4 threads = 4:36
 # 8 threads = 3:30
 ############################
-
 # Sets up thread Pool
 pool = Pool(8)
 # Maps items across threads 
-results = pool.imap(scrapeEventDetials, scrapeFightEvents(allEventsURL))
+# results = pool.imap(scrapeEventDetials, scrapeFightEvents(allEventsURL))
 # Creates a list of lists formatted for csvWritter
-toWrite = [j for i in results for j in i]
+toWrite = [j for i in pool.imap(scrapeEventDetials, scrapeFightEvents(allEventsURL)) for j in i]
 # Writes Event details to CSV
 csvWritter(toWrite, csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
-
 print ("scrpit took: ", datetime.now() - startScript )
