@@ -9,22 +9,17 @@ from multiprocessing import cpu_count
 from memory_profiler import profile
 from bs4 import BeautifulSoup
 from datetime import datetime
-
 """
 This Modules is scraping for links that contain fightevent information
 it will grab links and read it in to a list
 
 That list will then be read to loop through the fights and individual bouts
 """
-# The link to all the fight information
-# http://www.fightmetric.com/statistics/events/completed?page=all
-# Date Range = no limit
 
 startScript = datetime.now()
 
 def csvWritter(data, csvName, header):
-    # Block used to data to csvName
-    # With header
+    # data must be list of lists or yeild the same type
     with open(csvName, 'w') as csvLog:
         writer = csv.writer(csvLog, header, lineterminator = '\n') 
         writer.writerow(header)
@@ -32,8 +27,17 @@ def csvWritter(data, csvName, header):
             writer.writerow(eventData)
     return None
 
-def scrapeFightEvents(url): #Scrapes for all events on page 
+def thread(function, dataFeed):
+	# Creates pool of 8 workers
+	pool = Pool(8)
+	# Returns generator of item yeilded from each threads production
+	return (j for i in pool.imap(function, dataFeed) for j in i)
+
+
+def scrapeFightEvents(url): 
+    # Scrapes for all events on page 
     website = requests.get(url).content
+    # Finds the main table where data resides*
     soup = BeautifulSoup(website, 'html5lib').body.find('tbody')
     # Finds Link and name of fight
     fightLinks = soup.find_all('a', href = True, text = True)
@@ -50,16 +54,20 @@ def scrapeFightEvents(url): #Scrapes for all events on page
 
 # @profile
 def scrapeEventDetials(events):
-    # For every fight event
-    website = requests.get(events[1]).content   
+    # Scrape for all fights on page
+    website = requests.get(events[1]).content  
+    # Lets the requests render 
     time.sleep(3)
+    # Collects the html from the body of site
     soup = BeautifulSoup(website, 'html5lib').body
-    
+    # Finds Name of the fight
     fight_Name = soup.find('span', {'class': 'b-content__title-highlight'}).get_text().strip()
+    # Finds fight Attendance
     fight_Attendance = soup.find('ul', {'class':'b-list__box-list'}).find_all('li')[-1].get_text().strip().split()[-1]
+    # Conditional to determine if there was Attendance if not "null" 
     if fight_Attendance == 'Attendance:':
         fight_Attendance = 'NULL'
-
+    # returns a list comprehension of [fight Name, Attandence, fighter 1, fighter 2]
     eventDetails = [[fight_Name,
             row['data-link'],
             fight_Attendance,
@@ -80,20 +88,8 @@ csvDictionary = {'fightMetric_Events': r'C:\Users\Austi\Documents\GitHub\MainRep
 headerDictionary = {'fightMetric_Events' : ['Fight Title', 'Fight Link', 'Fight Date', 'Fight Location'], 
                     'fightMetric_Events_Name_link_fighter': ['Fight Name', 'Fight Link', 'Attendance','Fighter One', 'Fighter Two']}
 
-# Writes to a file in csvDictionary with header in headerDictionary
+# Writes list of events to CSV
 csvWritter(scrapeFightEvents(allEventsURL), csvDictionary['fightMetric_Events'], headerDictionary['fightMetric_Events'])
-
-############################
-# Threading implementation: 
-# 4 threads = 4:36
-# 8 threads = 3:30
-############################
-# Sets up thread Pool
-pool = Pool(8)
-# Maps items across threads 
-# results = pool.imap(scrapeEventDetials, scrapeFightEvents(allEventsURL))
-# Creates a list of lists formatted for csvWritter
-toWrite = [j for i in pool.imap(scrapeEventDetials, scrapeFightEvents(allEventsURL)) for j in i]
-# Writes Event details to CSV
-csvWritter(toWrite, csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
+# Writes list of fights from each event to CSV
+csvWritter(thread(scrapeEventDetials, scrapeFightEvents(allEventsURL)), csvDictionary['fightMetric_Events_Name_link_fighter'], headerDictionary['fightMetric_Events_Name_link_fighter'])
 print ("scrpit took: ", datetime.now() - startScript )
